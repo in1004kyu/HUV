@@ -1,0 +1,57 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_above="@+id/textView1"
+    android:layout_toLeftOf="@+id/textView1"
+    android:gravity="center"
+    android:orientation="vertical" >
+
+    <Button
+        android:id="@+id/btnip"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="서버 연결" />
+
+    <Button
+        android:id="@+id/btnlogstart"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="로그 시작" />
+
+    <Button
+        android:id="@+id/btnlogend"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="로그 끝" />
+
+    <ImageButton
+        android:id="@+id/btnSpeak"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/speak"
+        android:src="@android:drawable/ic_btn_speak_now" />
+
+    <ImageButton
+        android:id="@+id/btnheart"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY"
+        android:background="@drawable/heart_gray" />
+    
+    <ImageButton
+        android:id="@+id/btnkinect"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY"
+        android:background="@drawable/kinect_gray" />
+    
+    <TextView
+        android:id="@+id/txtText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+</LinearLayout>
