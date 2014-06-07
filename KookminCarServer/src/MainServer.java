@@ -30,7 +30,6 @@ public class MainServer extends JFrame {
 		 * 생성자
 		 */
 		public MainServer() {
-			
 			/* 화면 관련 설정을 합니다.*/
 			setTitle("임베디드 서버 ver 1.0");
 			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -98,13 +97,22 @@ public class MainServer extends JFrame {
 		    BufferedWriter out;
 		    String s = "출력 파일에 저장될 이런 저런 문자열입니다.";
 		    Date date;
-
+		    Date logLineDate;
+		    boolean init = false;
+		    /* 여러 로그의 싱크를 맞추기 위해서 
+		     * [0] = time, [1] = voice, [2] = heart rate, [3] = kinect
+		     * */
+		    long prevTime = 0;
+		    long currentTime = 0;
+			private String[] msg_arr = new String[]{"0", "0", "0", "0"};
+			String fileName;
 			@Override
 			public void run() {
 				
 				/* 깃발 값*/
 				boolean isStop = false;
-				date= new Date();
+				
+				
 				try {
 					/* 클라이언트 입력에 관한 Stream */
 					ois = new ObjectInputStream(socket.getInputStream());
@@ -131,7 +139,7 @@ public class MainServer extends JFrame {
 						
 						/* 홍길동#exit, 이렇게 온다면 종료하겠다는 뜻 */
 						if (str[0].equals("com")) {  // com#start
-							
+							date= new Date();
 							/* 종료가 맞다면 다른 사용자게에 알리고 */
 							//broadCasting(message);
 							
@@ -148,7 +156,7 @@ public class MainServer extends JFrame {
 								System.out.println("start");
 								String DateFormat ="#"+date.getYear()+"#"+ date.getDay() +"#"+date.getHours()+"#"+date.getMinutes()+"#"+date.getSeconds();
 								File desti = new File("C:\\Embedded");
-								String fileName = ClientUrl.getHostAddress() +DateFormat+".txt";
+								fileName = ClientUrl.getHostAddress() +DateFormat+".txt";
 								ta.append("생성한 파일 이름:" +fileName+ "\r\n");
 								  //해당 디렉토리의 존재여부를 확인
 //									if(!desti.exists()){
@@ -165,15 +173,42 @@ public class MainServer extends JFrame {
 							/* 종료가 아니라면 해당하는 메세지를 리스트에 저장된 모든 
 							 * 클라이언트 들에게 전달해 줍니다. */
 							//broadCasting(message);// 모든 사용자에게 채팅 내용 전달
-							if(str[0].equals("msg")){
-								out.write(date.getTime() +" " +str[1]); 
-								out.newLine();
-								System.out.println("msg");
-							} //End Of if
+							
+							out = new BufferedWriter(new FileWriter(fileName, true));
+							
+							logLineDate = new Date();
+							currentTime = logLineDate.getTime();							
+							if(str[0].equals("msg_voice")){
+								msg_arr[1] = str[1];
+							} else if(str[0].equals("msg_heart")){
+								msg_arr[2] = str[1];
+							} else if(str[0].equals("msg_kinect")){
+								msg_arr[3] = str[1];
+							}							
 							else
 							{
 								ta.append("클라이언으로부터 잘못된 데이터 입력" +  "\r\n");
 							}
+							// Log per every 0.5 seconds.
+							// 처음 실행 시 일단 기록한다. 이후 부턴 0.5 초 단위로 기록
+							if(currentTime - prevTime > 500 || prevTime == 0){
+								if(prevTime == 0){
+									// 처음 실행시 prevTime을 현재 시간으로
+									System.out.println("초기화");
+									prevTime = logLineDate.getTime();
+								}
+								System.out.println("msg " + currentTime + " " + prevTime);
+								out.write(currentTime +" " + msg_arr[1] + " " + msg_arr[2] + " " + msg_arr[3]); 
+								out.newLine();
+								prevTime = currentTime;
+								// 로깅 이후엔 전부 초기화
+								for(int i = 1; i < 4; i++){
+									msg_arr[i] = "0";
+								}
+							}
+							System.out.println("msg-not-logging");
+							
+							out.close();
 						}
 					} //End Of while
 					
