@@ -1,8 +1,15 @@
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -13,19 +20,37 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Date;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 
-public class MainServer extends JFrame {
+public class MainServer extends JFrame{
 	
-		private ArrayList<MultiServerThread> list;
+		static ArrayList<MultiServerThread> list;
 		private Socket socket;
 		private JTextArea ta;
 		private JTextField tf;
-
+		JButton btKinect ;
+		JButton btCluster ;
+		JButton btSteer ;
+		private String[] msg_arr = new String[]{"0", "0", "0", "0"};
+		BufferedWriter out = null;
+		boolean islogging = false;
+		Process ProcessKinect = null;
+		Process ProcessCluster = null;
+		Process ProcessSteer = null;
+		String kinectFacePath = "kinect\\SingleFace.exe";
+		
+		final int ID_CLUSTER = 10;
+		final int ID_KINECT = 11;
+		final int ID_PHONE = 12;
+		final int ID_MATLAB = 13;
+		int s = 0;
 		/**
 		 * 생성자
 		 */
@@ -37,9 +62,91 @@ public class MainServer extends JFrame {
 			add(new JScrollPane(ta));
 			tf = new JTextField();
 			tf.setEditable(false);
+			
+			btKinect = new JButton("키넥트실행");
+			btCluster = new JButton("클러스터 실행");
+			btSteer = new JButton("Steer실행");
+			
+			btKinect.addActionListener(new ActionListener(){
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					File dir1 = new File(".");
+					
+					
+					try {
+						System.out.println( dir1.getCanonicalPath() );
+						if(btKinect.getText().equalsIgnoreCase("키넥트실행")) {
+							ProcessKinect = new ProcessBuilder("kinect\\SingleFace.exe").start();
+						    btKinect.setText("키넥트중지");	
+						} else {
+							btKinect.setText("키넥트실행");
+							ProcessKinect.destroy();
+						}
+						
+						
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+	
+			});
+			btCluster.addActionListener(new ActionListener(){
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					
+				}
+			});
+			btSteer.addActionListener(new ActionListener(){
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+				File dir1 = new File(".");
+					
+					
+					try {
+						System.out.println( dir1.getCanonicalPath() );
+						if(btSteer.getText().equalsIgnoreCase("Steer실행")) {
+							ProcessSteer = new ProcessBuilder("steer\\SteeringWheelSDKDemo.exe").start();
+							
+							btSteer.setText("Steer중지");	
+							
+							
+						} else {
+							btSteer.setText("Steer실행");
+							ProcessSteer.destroy();
+						}
+						
+						
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			});
+			JPanel pane = new JPanel();
+			pane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+			pane.setLayout(new GridLayout(0,2));
+			pane.add(btKinect);
+			pane.add(btCluster);
+			pane.add(btSteer);
+			add(pane, BorderLayout.NORTH);
 			add(tf, BorderLayout.SOUTH);
-			setSize(300, 300);
+			setSize(500, 500);
 			setVisible(true);
+			
+			
+			
+			
+			islogging = true;
+			
+			LoggingThread threadLogging = new LoggingThread();
+			threadLogging.start();
 			
 			/* 채팅에 필요한 설정을 합니다. */
 			list = new ArrayList<MultiServerThread>();
@@ -64,13 +171,13 @@ public class MainServer extends JFrame {
 					
 					/* 여기까지 왔다면 클라이언트가 접속했다는 의미죠
 					 * 그러면 한 클라이언트당 처리를 담당할 스래드를 실행 합니다. */
-					mst = new MultiServerThread();
+					mst = new MultiServerThread(socket);
 					
 					/* 클라이 언트 관리를 위해 전체 리스트에 차곡 차곡 쌓아 줍니다. */
 					list.add(mst);
 					
 					/* 쓰래드 시작! */
-					mst.start();
+				//	mst.start();
 					
 				} //End Of while
 			} catch (IOException e) {
@@ -79,7 +186,94 @@ public class MainServer extends JFrame {
 			
 		}// End Of init
 		
+		class LoggingThread extends Thread {
+		   
+			Date date;
+		    Date logLineDate;
+		    long currentTime = 0;
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				boolean isStop = true;
+				while(isStop) {
+					
+					try {
+						Thread.sleep(500);
+						
+						if(islogging == true) {
+							logLineDate = new Date();
+							currentTime = logLineDate.getTime();		
+							
+							
+//							out.write(currentTime +" " + msg_arr[1] + " " + msg_arr[2] + " " + msg_arr[3]); 
+//							out.newLine();
+//							out.flush();								// 로깅 이후엔 전부 초기화
+//							
+//							if(true)
+//							{
+//								for(int i=0; i< list.size(); i++)
+//									list.get(i).sendMessage(currentTime +" " + msg_arr[1] + " " + msg_arr[2] + " " + msg_arr[3]);
+//							}
+							
+//								for(int i = 1; i < 4; i++){
+//									msg_arr[i] = "0";
+//								}	
+								
 
+						}
+						
+//						for(int i=0; i< list.size(); i++) {
+//							if(list.get(i).getID()== ID_CLUSTER)
+//								list.get(i).sendMessage("" + s*2);
+//							s++;
+//						}
+						
+						
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+					
+				}
+				super.run();
+			}
+
+		}
+
+		
+		class ClusterThread extends Thread {
+			   
+			Date date;
+		    Date logLineDate;
+		    long currentTime = 0;
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				boolean isStop = true;
+				System.out.println("ClusterThread Start");
+				while(isStop) {
+					
+					try {
+						Thread.sleep(500);
+							
+							if(true)
+							{
+								for(int i=0; i< list.size(); i++)
+									if(list.get(i).getID()== ID_CLUSTER)
+									list.get(i).sendMessage("DATA#50#50#1#4#5");
+							}
+		
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+					
+				}
+				super.run();
+			}
+
+		}
+		
 		/**
 		 * <p>Title: MultiServer Thread</p>
 		 *
@@ -91,51 +285,81 @@ public class MainServer extends JFrame {
 		 * @since 2009. 12. 7.
 		 */
 		class MultiServerThread extends Thread {
-			private ObjectInputStream ois;
-			private ObjectOutputStream oos;
-			private InetAddress ClientUrl;
-		    BufferedWriter out;
-		    String s = "출력 파일에 저장될 이런 저런 문자열입니다.";
+			
+			private Socket socket;
+			private InputStream fromClient;
+			private OutputStream toClient;
+			private int id;
 		    Date date;
 		    Date logLineDate;
 		    boolean init = false;
 		    /* 여러 로그의 싱크를 맞추기 위해서 
 		     * [0] = time, [1] = voice, [2] = heart rate, [3] = kinect
 		     * */
-		    long prevTime = 0;
+//		    long prevTime = 0;
 		    long currentTime = 0;
-			private String[] msg_arr = new String[]{"0", "0", "0", "0"};
+
 			String fileName;
-			@Override
-			public void run() {
+			
+			
+			public MultiServerThread(Socket socket) throws IOException
+			{
 				
-				/* 깃발 값*/
-				boolean isStop = false;
+				System.out.println("connecting  " + socket);
+				this.socket = socket;
+				fromClient = socket.getInputStream();
+				toClient   = socket.getOutputStream();
+				id = -1;
+				start();
 				
+			}
+			public void sendMessage(String str)
+			{
 				
 				try {
-					/* 클라이언트 입력에 관한 Stream */
-					ois = new ObjectInputStream(socket.getInputStream());
-					
-					/* 클라이언트 출력에 관한 Stream */
-					oos = new ObjectOutputStream(socket.getOutputStream());
-					
+					toClient.write(str.getBytes());
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			public int getID(){
+				return id;
+			}
+		    
+		    String s = "출력 파일에 저장될 이런 저런 문자열입니다.";
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+//				boolean isStop = false;
+
+				try{
+//					InputStream fromClient = socket.getInputStream();
+//					OutputStream toClient = socket.getOutputStream();
 					/* 채팅으로 어떤 문자가 왔는지 담는 변수 */
-					String message = null;
+					String outdata = null;
+										InetAddress ClientUrl = socket.getInetAddress();
+					byte[] buf = new byte[1024];
+					int count;
 					
-					ClientUrl = socket.getInetAddress();
-					ta.append(ClientUrl.toString()
-							+ " Iy P 주소의 클라이언트에서 접속하였습니다.\r\n");					
-					while (!isStop) {
+					ta.append(ClientUrl.toString()+ " IP 주소의 클라이언트에서 접속 하였습니다.\r\n");					
+
+					while ((count = fromClient.read(buf)) != -1)
+					{
 						
-						/* 클라이언트가 입력을 할때까지 기다립니다. */
-						message = (String) ois.readObject();
+						//toClient.write(buf, 0, count);
 						
-						/* 여기 넘어왔다면 클라이언트가 어떤 문자를 보냈고 */
+						outdata = new String(buf, 0 , count, "utf-8");
+						outdata = outdata.trim();
+						System.out.println(outdata);
+					//	ta.append("RECV: " + outdata + " \r\n");  //kin#23.25 
+
 						
-						/* 홍길동#방가방가 <-- 요런 식이기 때문에 방가 방가랑 홍길동 이랑 분리 해줍니다.*/
-						ta.append(socket.getInetAddress() +"에서 받은 메시지: "+message +"\r\n");
-						String[] str = message.split("#");
+						//ta.append(socket.getInetAddress() +"에서 받은 메시지: "+outdata +"\r\n");
+						
+						String[] str = outdata.split("#");
 						
 						/* 홍길동#exit, 이렇게 온다면 종료하겠다는 뜻 */
 						if (str[0].equals("com")) {  // com#start
@@ -148,14 +372,16 @@ public class MainServer extends JFrame {
 								//isStop = true;
 							    //  out.write(s); out.newLine();
 							      System.out.println("end");
-							      out.close();
+							      islogging = false;
+							      if(out != null)
+							    	  out.close();
 								// 로그기록 끝
 							}
 							else if(str[1].equals("start")){
 								// 로그기록시작
 								System.out.println("start");
 								String DateFormat ="#"+date.getYear()+"#"+ date.getDay() +"#"+date.getHours()+"#"+date.getMinutes()+"#"+date.getSeconds();
-								File desti = new File("C:\\Embedded");
+//								File desti = new File("C:\\Embedded");
 								fileName = ClientUrl.getHostAddress() +DateFormat+".txt";
 								ta.append("생성한 파일 이름:" +fileName+ "\r\n");
 								  //해당 디렉토리의 존재여부를 확인
@@ -164,91 +390,99 @@ public class MainServer extends JFrame {
 //									desti.mkdirs(); 
 //									}
 								out = new BufferedWriter(new FileWriter(fileName));
+								islogging = true;
 							}
 							else if(str[1].equals("stop"))
 							{
-								isStop = true;
+								islogging = false;
+								if(out != null)
+									out.close();
 							}
-						} else { // msg#단어
+							else if(str[1].equals("kinecton")) {
+//								   oProcess = new ProcessBuilder(kinectFacePath).start();
+								ProcessKinect = new ProcessBuilder("kinect\\SingleFace.exe").start();
+							}
+							else if(str[1].equals("kinectoff")){
+//								if(oProcess != null)
+//									oProcess.destroy();
+								ProcessKinect.destroy();
+							}else if(str[1].equals("id")){  // 아이디 입력
+								
+								if(str[2].equals("cluster")){
+									
+									id = ID_CLUSTER;
+									ClusterThread ct = new ClusterThread();  // 데이터 전송 시작
+									ct.start();
+									ta.append("클러스터 프로그램 로그인 성공!" +    "\r\n");	
+								}
+								else if(str[2].equals("kinect")){
+									id = ID_KINECT;
+								} 
+								else if(str[2].equals("phone")){
+									id = ID_PHONE;
+								} 
+								else if(str[2].equals("matlab")){
+									id = ID_MATLAB;
+									ta.append("Matlab 프로그램 로그인 성공!" +    "\r\n");	
+								} 
+							}
+							
+							
+						} else if (str[0].equals("steer")) {
+						
+							date= new Date();
+
+
+						}
+						else { // msg#단어
 							/* 종료가 아니라면 해당하는 메세지를 리스트에 저장된 모든 
 							 * 클라이언트 들에게 전달해 줍니다. */
 							//broadCasting(message);// 모든 사용자에게 채팅 내용 전달
-							
-							out = new BufferedWriter(new FileWriter(fileName, true));
-							
-							logLineDate = new Date();
-							currentTime = logLineDate.getTime();							
-							if(str[0].equals("msg_voice")){
-								msg_arr[1] = str[1];
-							} else if(str[0].equals("msg_heart")){
-								msg_arr[2] = str[1];
-							} else if(str[0].equals("msg_kinect")){
-								msg_arr[3] = str[1];
-							}							
-							else
+							//
+							if(islogging == true)
 							{
-								ta.append("클라이언으로부터 잘못된 데이터 입력" +  "\r\n");
-							}
-							// Log per every 0.5 seconds.
-							// 처음 실행 시 일단 기록한다. 이후 부턴 0.5 초 단위로 기록
-							if(currentTime - prevTime > 500 || prevTime == 0){
-								if(prevTime == 0){
-									// 처음 실행시 prevTime을 현재 시간으로
-									System.out.println("초기화");
-									prevTime = logLineDate.getTime();
+								
+//								out = new BufferedWriter(new FileWriter(fileName, true));
+					
+								if(str[0].equals("msg_voice")){
+									msg_arr[1] = str[1];
+								} else if(str[0].equals("msg_heart")){
+									msg_arr[2] = str[1];
+								} else if(str[0].equals("msg_kinect")){
+									msg_arr[3] = str[1];
+								} else if(str[0].equals("msg_matlab_call")){
+									
+										sendMessage(currentTime +" " + msg_arr[1] + " " + msg_arr[2] + " " + msg_arr[3]);
+									
 								}
-								System.out.println("msg " + currentTime + " " + prevTime);
-								out.write(currentTime +" " + msg_arr[1] + " " + msg_arr[2] + " " + msg_arr[3]); 
-								out.newLine();
-								prevTime = currentTime;
-								// 로깅 이후엔 전부 초기화
-								for(int i = 1; i < 4; i++){
-									msg_arr[i] = "0";
+								else
+								{
+									ta.append("클라이언으로부터 잘못된 데이터 입력" +  "\r\n");
 								}
-							}
-							System.out.println("msg-not-logging");
-							
-							out.close();
+								// Log per every 0.5 seconds.
+								// 처음 실행 시 일단 기록한다. 이후 부턴 0.5 초 단위로 기록
+
+						//		System.out.println("msg-logging");
+								
+//								out.close();
+							} //if(islogging == true)
 						}
-					} //End Of while
+				
+					}
 					
-					/* 여기 왔다는 증거는 이 클라이 언트가 종료 한다는 것이기 때문에
-					 * 리스트에서 빼 줍니다. */
-					list.remove(this);
-					
-					/*그리고 서버 화면에 누가 종료 되었는지 알려주는 것이죠*/
-					ta.append(socket.getInetAddress() + " IP 주소의 사용자께서 종료하셨습니다.\r\n");
-					tf.setText("연결 클라이언트 수 : " + list.size());
-					
-				} catch (Exception e) {
+					toClient.close();
+					ta.append("RECV: " + "연결 종료" + " \r\n");
+				}
+				catch(IOException e) {
 					list.remove(this);// 장길산을 뺀다.
 					ta.append(socket.getInetAddress() +e.getMessage()
 							+ " IP 주소의 클라이언트에서 비정상 종료하셨습니다.\r\n");
 					tf.setText("남은 클라이언트 수 : " + list.size());
-				} //End Of catch
-			} //End Of run
+				}
+				super.run();
+			}
+			
 
-			/**
-			 * 모두에게 전송 합니다.
-			 * @param message
-			 */
-//			public void broadCasting(String message) {
-//				for (MultiServerThread ct : list) {
-//					ct.send(message);
-//				} //End Of for
-//			} //End Of Method broadCasting
-
-			/**
-			 * 한 사용자에게 전송합니다.
-			 * @param message
-			 */
-//			public void send(String message) { // 한 사용자에게 전송
-//				try {
-//					oos.writeObject(message);
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				} //End Of catch
-//			} //End Of Method send
 		}// 내부 클래스
 		
 		/**
