@@ -7,46 +7,57 @@
     android:gravity="center"
     android:orientation="vertical" >
 
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/logo" />
+
     <Button
         android:id="@+id/btnip"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="서버 연결" />
+        android:layout_width="match_parent"
+        android:layout_height="151dp"
+
+        android:text="서버 연결"
+        android:textSize="30sp" />
 
     <Button
         android:id="@+id/btnlogstart"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+  
+        android:textSize="30sp"
         android:text="로그 시작" />
 
     <Button
         android:id="@+id/btnlogend"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+
+        android:textSize="30sp"
         android:text="로그 끝" />
 
-    <ImageButton
-        android:id="@+id/btnSpeak"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/speak"
-        android:src="@android:drawable/ic_btn_speak_now" />
-
-    <ImageButton
-        android:id="@+id/btnheart"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitXY"
-        android:background="@drawable/heart_gray" />
-    
-    <ImageButton
+    <Button
         android:id="@+id/btnkinect"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitXY"
-        android:background="@drawable/kinect_gray" />
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:text="키넥트 실행"
+        android:textSize="30sp" />
+
+    <Button
+        android:id="@+id/btnheart"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+  
+        android:text="제피르연결"
+        android:textSize="30sp" />
+
+    <Button
+        android:id="@+id/btnsound"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:text="음성인식"
+        android:textSize="30sp" />
     
     <TextView
         android:id="@+id/txtText"

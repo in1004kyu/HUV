@@ -1,9 +1,14 @@
 package kookmin.kesl;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -39,9 +44,10 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 
 	protected static final int RESULT_SPEECH = 1;
-	private ObjectOutputStream oos; // √‚∑¬
-
-	// ¡¶««∏£
+//	private ObjectOutputStream oos; // Ï∂úÎ†•
+    private OutputStream oos;
+    private InputStream ips;
+	// Ï†úÌîºÎ•¥
 	BluetoothAdapter adapter = null;
 	BTClient _bt;
 	ZephyrProtocol _protocol;
@@ -50,14 +56,15 @@ public class MainActivity extends Activity {
 	String BhMacID;
 	String DeviceName;
 
-	// ¡¶««∏£
+	// Ï†úÌîºÎ•¥
 
-	private ImageButton btnSpeak;
-	private ImageButton btnheart;
-	private ImageButton btnkinect;
+
+	private Button btnheart;
+	private Button btnkinect;
 	private Button btn_ip;
 	private Button btn_log_start;
 	private Button btn_log_end;
+	private Button btnSound;
 	private TextView txtText;
 
 	private EditText et_dialoginputip;
@@ -70,6 +77,8 @@ public class MainActivity extends Activity {
 	boolean isHeart;
 	boolean isKinect;
 	boolean isLogging;
+	
+	boolean isLock = false;
 
 	@Override
 	protected void onStart() {
@@ -82,7 +91,8 @@ public class MainActivity extends Activity {
 		getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		try {
 			if (socket != null) {
-				oos.writeObject("com#stop");
+//				oos.writeObject("com#stop");
+				sendMessage("com#stop");
 				socket.close();
 			}
 		} catch (IOException e) {
@@ -90,6 +100,21 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	public void sendMessage(String msg) {
+		byte[] buffer = null;
+		try {
+			buffer = msg.getBytes("utf-8");
+		} catch (UnsupportedEncodingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			oos.write(buffer);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -98,17 +123,18 @@ public class MainActivity extends Activity {
 		ip_addr = null;
 		port = 5000;
 		txtText = (TextView) findViewById(R.id.txtText);
-		btnSpeak = (ImageButton) findViewById(R.id.btnSpeak);
-		btnheart = (ImageButton) findViewById(R.id.btnheart);
-		btnkinect = (ImageButton) findViewById(R.id.btnkinect);
+		
+		btnheart = (Button) findViewById(R.id.btnheart);
+		btnkinect = (Button) findViewById(R.id.btnkinect);
 		btn_ip = (Button) findViewById(R.id.btnip);
 		btn_log_start = (Button) findViewById(R.id.btnlogstart);
 		btn_log_end = (Button) findViewById(R.id.btnlogend);
+		btnSound = (Button)findViewById(R.id.btnsound);
 		socket = null;
 		isHeart = false;
 		isKinect = false;
 		isLogging = false;
-		
+
 		/*
 		 * Sending a message to android that we are going to initiate a pairing
 		 * request
@@ -128,11 +154,83 @@ public class MainActivity extends Activity {
 		this.getApplicationContext().registerReceiver(new BTBondReceiver(),
 				filter2);
 
-		/* ¿ΩºÆ¿ŒΩƒ πˆ∆∞ ¥≠∑∂¿ª ∂ß */
-		btnSpeak.setOnClickListener(new View.OnClickListener() {
+		/* ÏùåÏÑùÏù∏Ïãù Î≤ÑÌäº ÎàåÎ†ÄÏùÑ Îïå */
+	
+		/* ÏÑúÎ≤ÑÏó∞Í≤∞ Î≤ÑÌäº ÎàåÎ†ÄÏùÑ Îïå */
+		btn_ip.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				Log.i("speech.path", "clickon");
+				if (socket == null) {
+					Log.i("speech.path", "log ip");
+					m_dialog = (LinearLayout) View.inflate(MainActivity.this,
+							R.layout.dialog_ip, null);
+					new AlertDialog.Builder(MainActivity.this)
+							.setTitle("ÏÑúÎ≤Ñ Ïó∞Í≤∞")
+							.setView(m_dialog)
+							.setPositiveButton("Ï∑®ÏÜå",
+									new DialogInterface.OnClickListener() {
+										@Override
+										public void onClick(
+												DialogInterface arg0, int arg1) {
+											Log.i("speech.path", "cancel");
+										}
+									})
+							.setNegativeButton("Ïó∞Í≤∞",
+									new DialogInterface.OnClickListener() {
+										@Override
+										public void onClick(
+												DialogInterface arg0, int arg1) {
+											et_dialoginputip = (EditText) m_dialog
+													.findViewById(R.id.dialoginputip);
+											Log.i("speech.path",
+													et_dialoginputip.getText()
+															.toString());
+											ip_addr = et_dialoginputip
+													.getText().toString();
+											socketconnect.start();
+										}
+									}).show();
+				} else {
+					Toast t = Toast.makeText(getApplicationContext(),
+							"Ïù¥ÎØ∏ Ïó∞Í≤∞Ïù¥ ÏÉÅÌÉúÏûÖÎãàÎã§.", Toast.LENGTH_SHORT);
+					t.show();
+				}
+			}
+		});
+		btn_log_start.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (socket != null) {
+					Log.i("speech.path", "log start");
+					//	oos.writeObject("com#start");
+						sendMessage("com#start");
+						isLogging = true;
+				} else {
+					Toast t = Toast.makeText(getApplicationContext(),
+							"ÏÑúÎ≤Ñ Ïó∞Í≤∞ Î≤ÑÌäºÏùÑ Î®ºÏ†Ä ÎàÑÎ•¥ÏÑ∏Ïöî", Toast.LENGTH_SHORT);
+					t.show();
+				}
+			}
+		});
+		btn_log_end.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (socket != null) {
+					Log.i("speech.path", "log end");
+					//						oos.writeObject("com#end");
+						sendMessage("com#end");
+						isLogging = false;
+				} else {
+					Toast t = Toast.makeText(getApplicationContext(),
+							"ÏÑúÎ≤Ñ Ïó∞Í≤∞ Î≤ÑÌäºÏùÑ Î®ºÏ†Ä ÎàÑÎ•¥ÏÑ∏Ïöî", Toast.LENGTH_SHORT);
+					t.show();
+				}
+			}
+		});
+		// ÏùåÏÑ±Ïù∏Ïãù Î≤ÑÌäº
+		btnSound.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
 				if (socket != null) {
 					Intent intent = new Intent(
 							RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -153,85 +251,7 @@ public class MainActivity extends Activity {
 					}
 				} else {
 					Toast t = Toast.makeText(getApplicationContext(),
-							"º≠πˆ ø¨∞· πˆ∆∞¿ª ∏’¿˙ ¥©∏£ººø‰", Toast.LENGTH_SHORT);
-					t.show();
-				}
-			}
-		});
-		/* º≠πˆø¨∞· πˆ∆∞ ¥≠∑∂¿ª ∂ß */
-		btn_ip.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (socket == null) {
-					Log.i("speech.path", "log ip");
-					m_dialog = (LinearLayout) View.inflate(MainActivity.this,
-							R.layout.dialog_ip, null);
-					new AlertDialog.Builder(MainActivity.this)
-							.setTitle("º≠πˆ ø¨∞·")
-							.setView(m_dialog)
-							.setPositiveButton("√Îº“",
-									new DialogInterface.OnClickListener() {
-										@Override
-										public void onClick(
-												DialogInterface arg0, int arg1) {
-											Log.i("speech.path", "cancel");
-										}
-									})
-							.setNegativeButton("ø¨∞·",
-									new DialogInterface.OnClickListener() {
-										@Override
-										public void onClick(
-												DialogInterface arg0, int arg1) {
-											et_dialoginputip = (EditText) m_dialog
-													.findViewById(R.id.dialoginputip);
-											Log.i("speech.path",
-													et_dialoginputip.getText()
-															.toString());
-											ip_addr = et_dialoginputip
-													.getText().toString();
-											socketconnect.start();
-										}
-									}).show();
-				} else {
-					Toast t = Toast.makeText(getApplicationContext(),
-							"¿ÃπÃ ø¨∞·¿Ã ªÛ≈¬¿‘¥œ¥Ÿ.", Toast.LENGTH_SHORT);
-					t.show();
-				}
-			}
-		});
-		btn_log_start.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (socket != null) {
-					Log.i("speech.path", "log start");
-					try {
-						oos.writeObject("com#start");
-						isLogging = true;
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				} else {
-					Toast t = Toast.makeText(getApplicationContext(),
-							"º≠πˆ ø¨∞· πˆ∆∞¿ª ∏’¿˙ ¥©∏£ººø‰", Toast.LENGTH_SHORT);
-					t.show();
-				}
-			}
-		});
-		btn_log_end.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if (socket != null) {
-					Log.i("speech.path", "log end");
-					try {
-						oos.writeObject("com#end");
-						isLogging = false;
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} else {
-					Toast t = Toast.makeText(getApplicationContext(),
-							"º≠πˆ ø¨∞· πˆ∆∞¿ª ∏’¿˙ ¥©∏£ººø‰", Toast.LENGTH_SHORT);
+							"ÏÑúÎ≤Ñ Ïó∞Í≤∞ Î≤ÑÌäºÏùÑ Î®ºÏ†Ä ÎàÑÎ•¥ÏÑ∏Ïöî", Toast.LENGTH_SHORT);
 					t.show();
 				}
 			}
@@ -242,13 +262,13 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				if (isHeart == false) {
 					isHeart = true;
-					// heart √¯¡§
+					// heart Ï∏°Ï†ï
 					connectToHxM();
-					btnheart.setBackgroundResource(R.drawable.heart);
+				//	btnheart.setBackgroundResource(R.drawable.heart);
 				} else {
 					isHeart = false;
-					// heart √¯¡§ √Îº“
-					btnheart.setBackgroundResource(R.drawable.heart_gray);
+					// heart Ï∏°Ï†ï Ï∑®ÏÜå
+					//btnheart.setBackgroundResource(R.drawable.heart_gray);
 					disConnectToHxM();
 				}
 
@@ -260,11 +280,13 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				if (isKinect == false) {
 					isKinect = true;
-					btnkinect.setBackgroundResource(R.drawable.kinect);
-					// ≈∞≥ÿ∆Æ ªÁøÎ
+					//btnkinect.setBackgroundResource(R.drawable.kinect);
+					sendMessage("com#kinecton");
+					// ÌÇ§ÎÑ•Ìä∏ ÏÇ¨Ïö©
 				} else {
 					isKinect = false;
-					btnkinect.setBackgroundResource(R.drawable.kinect_gray);
+					//btnkinect.setBackgroundResource(R.drawable.kinect_gray);
+					sendMessage("com#kinectoff");
 				}
 			}
 		});
@@ -272,13 +294,14 @@ public class MainActivity extends Activity {
 
 	// onCreate
 
-	/* ¿ΩºÆ ¿ŒΩƒ¿Ã µ∆¿ª ãö */
+	/* ÏùåÏÑù Ïù∏ÏãùÏù¥ ÎêêÏùÑ ¬ã¬ö */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 
 		switch (requestCode) {
 		case RESULT_SPEECH: {
+			
 			if (resultCode == RESULT_OK && null != data) {
 				ArrayList<String> text = data
 						.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
@@ -287,16 +310,21 @@ public class MainActivity extends Activity {
 				String str = text.get(0).toString();
 				String[] strarry = str.split(" ");
 				Log.i("speech.path", str);
-				try {
-					/* str : ¿ΩºÆ¿ŒΩƒµ» πÆ¿Â */
-					if(isLogging == true)
-						oos.writeObject("msg_voice#" + strarry[0]);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}			
+				/* str : ÏùåÏÑùÏù∏ÏãùÎêú Î¨∏Ïû• */
+//				if(isLogging == true) {
+////						oos.writeObject("msg_voice#" + strarry[0]);
+//					sendMessage("msg_voice#" + strarry[0]);
+//				}	
+				
+					sendMessage("msg_voice#" + strarry[0]);
+					Toast.makeText(this, "ÏùåÏÑ±Ïù∏Ïãù : " +strarry[0], 1).show();
+			
+				
+				
 				Log.i("speech.path", "speech success message is " + str);
 			}
+			isLock = false;
+			break;
 		}
 		}
 	}
@@ -306,12 +334,29 @@ public class MainActivity extends Activity {
 			try {
 				socket = new Socket(ip_addr, port);
 				try {
-					oos = new ObjectOutputStream(socket.getOutputStream());
+//					oos = new ObjectOutputStream(socket.getOutputStream());
+					oos = socket.getOutputStream();
+					ips = socket.getInputStream();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				// º∫∞¯
-				socketConnectedhandler.sendEmptyMessage(0);
+				// ÏÑ±Í≥µ
+				
+				String outdata = null;
+				byte[] buf = new byte[1024];
+				int count;
+				
+				socketConnectedhandler.sendEmptyMessage(0);		
+				while ((count = ips.read(buf)) != -1)
+				{
+				//toClient.write(buf, 0, count);
+				
+				outdata = new String(buf, 0, count);
+				System.out.println(outdata);
+				socketConnectedhandler.sendEmptyMessage(1);
+				}
+				
+				
 			} catch (UnknownHostException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -424,11 +469,17 @@ public class MainActivity extends Activity {
 				String HeartRatetext = msg.getData().getString("HeartRate");
 				System.out.println("Heart Rate Info is " + HeartRatetext);
 				if (socket != null) {
-					try {
-						if(isLogging == true)
-							oos.writeObject("msg_heart#" + HeartRatetext);
-					} catch (IOException e) {
-						e.printStackTrace();
+					if(isLogging == true){
+//							oos.writeObject("msg_heart#" + HeartRatetext);
+//							sendMessage("msg_heart#" + HeartRatetext);
+						String send = "msg_heart#" + HeartRatetext;
+						byte[] buffer = send.getBytes();
+						try {
+							oos.write(buffer);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 				break;
@@ -439,7 +490,43 @@ public class MainActivity extends Activity {
 
 	private Handler socketConnectedhandler = new Handler() {
 		public void handleMessage(Message msg) {
-			Toast.makeText(getApplicationContext(), "º≠πˆø¨∞·µ∆Ω¿¥œ¥Ÿ.", 0).show();
+			switch(msg.what) {
+			case 0:
+				Toast.makeText(getApplicationContext(), "ÏÑúÎ≤Ñ Ïó∞Í≤∞!.", 0).show();
+				break;
+				
+			case 1:
+//				Toast.makeText(getApplicationContext(), "Î©îÏãúÏßÄ Î∞õÏùå.", 0).show();
+				if(isLock==true)
+					break;
+				isLock=true;
+				Log.i("speech.path", "clickon");
+				if (socket != null) {
+					Intent intent = new Intent(
+							RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+
+					intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+							"en-US");
+
+					try {
+						startActivityForResult(intent, RESULT_SPEECH);
+						txtText.setText("");
+					} catch (ActivityNotFoundException a) {
+						Toast t = Toast
+								.makeText(
+										getApplicationContext(),
+										"Ops! Your device doesn't support Speech to Text",
+										Toast.LENGTH_SHORT);
+						t.show();
+					}
+				} else {
+					Toast t = Toast.makeText(getApplicationContext(),
+							"ÏÑúÎ≤Ñ Ïó∞Í≤∞ Î≤ÑÌäºÏùÑ Î®ºÏ†Ä ÎàÑÎ•¥ÏÑ∏Ïöî", Toast.LENGTH_SHORT);
+					t.show();
+				}
+				break;
+			}
+			
 			super.handleMessage(msg);
 		}
 	};

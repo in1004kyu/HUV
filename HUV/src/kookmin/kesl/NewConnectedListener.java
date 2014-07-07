@@ -9,7 +9,7 @@ public class NewConnectedListener extends ConnectListenerImpl
 {
 	private Handler _aNewHandler; 
 	private int HR_SPD_DIST_PACKET =0x26;
-	
+
 	private final int HEART_RATE = 0x100;
 	private HRSpeedDistPacketInfo HRSpeedDistPacket = new HRSpeedDistPacketInfo();
 	public NewConnectedListener(Handler handler,Handler _NewHandler) {
@@ -31,7 +31,7 @@ public class NewConnectedListener extends ConnectListenerImpl
 				if (HR_SPD_DIST_PACKET==msg.getMsgID())
 				{				
 					byte [] DataArray = msg.getBytes();
-					
+
 					//***************Displaying the Heart Rate********************************
 					int HRate =  HRSpeedDistPacket.GetHeartRate(DataArray);
 					Message text1 = _aNewHandler.obtainMessage(HEART_RATE);
@@ -45,5 +45,5 @@ public class NewConnectedListener extends ConnectListenerImpl
 			}
 		});
 	}
-	
+
 }
