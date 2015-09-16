@@ -28,7 +28,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-
+/* github test */
 public class MainServer extends JFrame{
 	
 		static ArrayList<MultiServerThread> list;
